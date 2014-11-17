@@ -7,6 +7,8 @@ int main()
 
   height = 20;
   width = 10;
+  
+  int area[height][width];
 
   startx = 0;
   starty = 0;
@@ -18,7 +20,6 @@ int main()
   
   printw("Press F1 to exit");
   refresh();
-  int area[height][width];
 
 
   
