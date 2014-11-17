@@ -11,14 +11,16 @@ int main()
   startx = 0;
   starty = 0;
   
-  printw("Press F1 to exit");
-  refresh();
-  int area[height][width];
-
   initscr();
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
+  
+  printw("Press F1 to exit");
+  refresh();
+  int area[height][width];
+
+
   
   tet_win = newwin(height, width, starty, startx);
   keypad(tet_win, TRUE);
