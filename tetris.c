@@ -20,8 +20,6 @@ int main()
   
   printw("Press F1 to exit");
   refresh();
-
-
   
   tet_win = newwin(height, width, starty, startx);
   keypad(tet_win, TRUE);
@@ -42,7 +40,8 @@ int main()
         break;
     }
   }
-  
+  delwin(local_win);
+
   endwin();
 
   return 0;
