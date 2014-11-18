@@ -1,24 +1,46 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdlib.h>
-#define DELAY 30000
+#define DELAY 100000
 #define FIG_SIZE 2
-
+#define HEIGHT 20
+#define WIDTH 10
 int checkKeyPressed(int ch, char *icon);
-int **getFigure();
-int **getArray();
+int **get2DArray(int cols, int rows);
 int updateBoard();
-
+void drawFigure(WINDOW* win, int **figure, int x, int y);
+void drawBoard(WINDOW *win, int **board);
 int main()
 {
   WINDOW *tet_win;
-  int ch, height, width, x, y, startx, starty, max_x, max_y;
+  int ch, x, y, startx, starty, max_x, max_y;
   char icon = '0';
-  height = 20;
-  width = 10;
   
-  int area[height][width];
-
+  int **board;
+  int **buffBoard;
+  int **figure;
+  figure = get2DArray(FIG_SIZE, FIG_SIZE);
+  for(int i = 0; i < FIG_SIZE; ++i) 
+  {
+    for(int j = 0; j < FIG_SIZE; ++j) 
+	  {
+	   figure[i][j] = 0;
+	    if(i == 1) 
+	    {
+        figure[i][j] = 1;
+	    }
+	  }
+  }
+  
+  board = get2DArray(HEIGHT, WIDTH);
+  for(int i = 0; i < HEIGHT; i++)
+  {
+    for(int j = 0; j < WIDTH; j++)
+    {
+      board[i][j] = 0;
+    }
+  }
+  buffBoard = board;
   startx = 0;
   starty = 0;
   
@@ -35,8 +57,7 @@ int main()
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
   
-  tet_win = newwin(height, width, (LINES - height) / 2, (COLS - width) / 2);
-  box(tet_win, 0, 0);
+  tet_win = newwin(HEIGHT, WIDTH, (LINES - HEIGHT) / 2, (COLS - WIDTH) / 2);
 
   wrefresh(tet_win);
   refresh();
@@ -48,7 +69,10 @@ int main()
     
     if((ch = getch()) == ERR) 
     {
-      mvwaddch(tet_win, y, x, icon);
+      // Draw a figure, move it downwards
+      // until it hits some other figure
+      drawBoard(tet_win, board);
+      drawFigure(tet_win, figure, x, y);
       wrefresh(tet_win);
       usleep(DELAY);
       if(counter == 10)
@@ -59,13 +83,12 @@ int main()
       if(y > max_y) 
       {
         y = 0;
-        wclear(tet_win);
-        box(tet_win, 0, 0);
       }
       counter++;
     }
     else 
     {
+      // The figure drawn rotates
       checkKeyPressed(ch, &icon);
     }
   }
@@ -77,30 +100,47 @@ int main()
   return 0;
 }
 
-int **getFigure() 
+void drawFigure(WINDOW* win, int **figure, int x, int y)
 {
-  int **figure = getArray();
-  for(int i = 0; i < FIG_SIZE; ++i) 
+  for(int i = 0; i < HEIGHT; i++)
   {
-    for(int j = 0; j < FIG_SIZE; ++j) 
-	{
-	  figure[i][j] = 0;
-	  if(i == 1) 
-	  {
-        figure[i][j] = 1;
-	  }
-	}
+    for(int j = 0; j < WIDTH; j++)
+    {
+      if(figure[i][j] == 1)
+      {
+        mvwaddch(win, y, x, '0');
+      }
+    }
   }
 }
-int **getArray() 
+
+void drawBoard(WINDOW *win, int **board) 
 {
-  int* val = calloc(FIG_SIZE * FIG_SIZE, sizeof(int));
-  int** figure = malloc(FIG_SIZE * sizeof(int));
-  for(int i = 0; i < FIG_SIZE; ++i) 
+  for(int i = 0; i < HEIGHT; i++)
   {
-    figure[i] = val + i * FIG_SIZE;
+    for(int j = 0; j < WIDTH; j++)
+    {
+      if(board[i][j] == 0)
+      {
+        mvwaddch(win, i, j, '.');
+      }
+      else 
+      {
+        mvwaddch(win, i, j, '0');
+      }
+    }
   }
-  return figure;
+}
+
+int **get2DArray(int rows, int cols) 
+{
+  int **arr;
+  arr = (int**)malloc(rows * sizeof(int *));
+  for(int i = 0; i < rows; ++i) 
+  {
+    arr[i] = (int*) malloc(cols * sizeof(int));
+  }
+  return arr;
 }
 
 int checkKeyPressed(int ch, char *icon) 
