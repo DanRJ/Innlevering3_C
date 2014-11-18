@@ -6,7 +6,9 @@
 
 int checkKeyPressed(int ch, char *icon);
 int **getFigure();
+int **getArray();
 int updateBoard();
+
 int main()
 {
   WINDOW *tet_win;
@@ -76,6 +78,21 @@ int main()
 }
 
 int **getFigure() 
+{
+  int **figure = getArray();
+  for(int i = 0; i < FIG_SIZE; ++i) 
+  {
+    for(int j = 0; j < FIG_SIZE; ++j) 
+	{
+	  figure[i][j] = 0;
+	  if(i == 1) 
+	  {
+        figure[i][j] = 1;
+	  }
+	}
+  }
+}
+int **getArray() 
 {
   int* val = calloc(FIG_SIZE * FIG_SIZE, sizeof(int));
   int** figure = malloc(FIG_SIZE * sizeof(int));
