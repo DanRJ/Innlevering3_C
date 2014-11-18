@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #define DELAY 100000
-#define FIG_SIZE 2
+#define FIG_SIZE 3
 #define HEIGHT 20
 #define WIDTH 10
 int checkKeyPressed(int ch, char *icon);
@@ -20,18 +20,18 @@ int main()
   int **buffBoard;
   int **figure;
   figure = get2DArray(FIG_SIZE, FIG_SIZE);
-  for(int i = 0; i < FIG_SIZE; ++i) 
+  
+  for(int i = 0; i < FIG_SIZE; i++) 
   {
-    for(int j = 0; j < FIG_SIZE; ++j) 
+    for(int j = 0; j < FIG_SIZE; j++) 
 	  {
-	   figure[i][j] = 0;
-	    if(i == 1) 
-	    {
+      figure[i][j] = 0;
+      if(i == 1)
+      {
         figure[i][j] = 1;
-	    }
+      }
 	  }
   }
-  
   board = get2DArray(HEIGHT, WIDTH);
   for(int i = 0; i < HEIGHT; i++)
   {
@@ -82,7 +82,8 @@ int main()
       }
       if(y > max_y) 
       {
-        y = 0;
+        // If figure reaches bottom or touches another figure
+        // Save figure position to board[][]
       }
       counter++;
     }
@@ -102,16 +103,19 @@ int main()
 
 void drawFigure(WINDOW* win, int **figure, int x, int y)
 {
-  for(int i = 0; i < HEIGHT; i++)
+  for(int i = 0; i < FIG_SIZE; i++)
   {
-    for(int j = 0; j < WIDTH; j++)
+    for(int j = 0; j < FIG_SIZE; j++)
     {
       if(figure[i][j] == 1)
       {
-        mvwaddch(win, y, x, '0');
+        mvwaddch(win, y, j, '0');
       }
+      printw("%d", figure[i][j]);
     }
+    printw("\n");
   }
+  printw("\n");
 }
 
 void drawBoard(WINDOW *win, int **board) 
