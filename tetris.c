@@ -24,7 +24,6 @@ int main()
 {
   WINDOW *tet_win;
   int ch, x, y, startx, starty, max_x, max_y;
-  char icon = '0';
   FILE *f = fopen("file.txt", "w");
 
   int **board;
@@ -84,8 +83,9 @@ int main()
     {
       if(detectCollision(figure, buffBoard, x ,y) == 1)
       {
-        renderFigureToScreen(figure);
         saveFigure(figure, buffBoard, x, y);
+        renderBoardToScreen(buffBoard);
+        saveBoardToFile(f, buffBoard);
         y = 1;
       }
       // Draw a figure, move it downwards
@@ -108,7 +108,7 @@ int main()
       checkKeyPressed(ch, &y, &x, max_y, max_x);
       if(x + 2 > max_x) x = WIDTH - 2;
       if(x <= 0) x = 1;
-      if(y >= max_y) y = HEIGHT - 1;
+      if(y > max_y) y = max_y;
     }
   }
   fclose(f);
@@ -121,6 +121,7 @@ int main()
 
 int detectCollision(int **figure, int **board, int x, int y)
 {
+  printw("Y: %d X: %d\n", y, x);
   if(y >= HEIGHT)
   {
     return 1;
@@ -147,9 +148,9 @@ void saveBoardToFile(FILE* f, int **board)
 }
 void renderFigureToScreen(int **figure)
 {
-  for(int i = 0; i < FIG_SIZE; i++)
+  for(int i = 1; i <= FIG_SIZE; i++)
   {
-    for(int j = 0; j < FIG_SIZE; j++)
+    for(int j = 1; j <= FIG_SIZE; j++)
     {
       printw("%d", figure[i][j]);
     }
