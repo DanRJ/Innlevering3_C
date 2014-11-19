@@ -5,10 +5,11 @@
 #define FIG_SIZE 3
 #define HEIGHT 20
 #define WIDTH 10
+
 int checkKeyPressed(int ch, char *icon);
 int **get2DArray(int cols, int rows);
 int updateBoard();
-void drawFigure(WINDOW* win, int **figure, int x, int y);
+void drawFigure(WINDOW* win, int **figure, int **board, int x, int y);
 void drawBoard(WINDOW *win, int **board);
 int main()
 {
@@ -47,7 +48,7 @@ int main()
   max_x = 0;
   max_y = 0;
 
-  x = 0;
+  x = 1;
   y = 0;
 
   initscr();
@@ -71,8 +72,9 @@ int main()
     {
       // Draw a figure, move it downwards
       // until it hits some other figure
+
+      drawFigure(tet_win, figure, board, x, y);
       drawBoard(tet_win, board);
-      drawFigure(tet_win, figure, x, y);
       wrefresh(tet_win);
       usleep(DELAY);
       if(counter == 10)
@@ -101,21 +103,15 @@ int main()
   return 0;
 }
 
-void drawFigure(WINDOW* win, int **figure, int x, int y)
+void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
 {
-  for(int i = 0; i < FIG_SIZE; i++)
+  for(int i = y; i < FIG_SIZE; i++)
   {
-    for(int j = 0; j < FIG_SIZE; j++)
+    for(int j = x - 1; j < FIG_SIZE; j++)
     {
-      if(figure[i][j] == 1)
-      {
-        mvwaddch(win, y, j, '0');
-      }
-      printw("%d", figure[i][j]);
+      board[i][j] = figure[i][j];
     }
-    printw("\n");
   }
-  printw("\n");
 }
 
 void drawBoard(WINDOW *win, int **board) 
