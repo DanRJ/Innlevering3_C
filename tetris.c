@@ -9,7 +9,7 @@
 int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x);
 int **get2DArray(int cols, int rows);
 int updateBoard();
-void drawFigure(WINDOW* win, int **figure, int **board, int x, int y);
+void drawFigure(int **figure, int **board, int x, int y);
 void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f);
 
 int main()
@@ -49,7 +49,7 @@ int main()
   max_x = 0;
   max_y = 0;
 
-  x = 1;
+  x = WIDTH / 2;
   y = 1;
 
   initscr();
@@ -73,7 +73,7 @@ int main()
     {
       // Draw a figure, move it downwards
       // until it hits some other figure
-      drawFigure(tet_win, figure, buffBoard, x, y);
+      drawFigure(figure, buffBoard, x, y);
       drawBoard(tet_win, board, buffBoard, f);
       wrefresh(tet_win);
       sleep(1);
@@ -104,7 +104,15 @@ int main()
   return 0;
 }
 
-void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
+/*
+*  drawFigure(int **figure, int **board, int x, int y)
+*    int **figure     a 2D array which contains a certain figure
+*    int **board      a 2D array which will draw the figure to screen
+*    int x            an int which contains the y position for figure[1][1] on the board
+*    int y            an int which contains the y position for figure[1][1] on the board
+*  returns            void
+*/
+void drawFigure(int **figure, int **board, int x, int y)
 {
   for(int i = y - 1; i < (FIG_SIZE + y) - 1; i++)
   {
@@ -115,9 +123,16 @@ void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
   }
 }
 
+/*
+*  drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f)
+*    WINDOW *win      a pointer to WINDOW, which it will write to
+*    int **board      a 2D array which contains the static blocks in the board
+*    int **buffBoard  a 2D array which contains the figure
+*    FILE *f          a FILE which will write the board to file.txt
+*  returns            void
+*/
 void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f) 
 {
-  
   for(int i = 0; i < HEIGHT; i++)
   {
     for(int j = 0; j < WIDTH; j++)
@@ -132,13 +147,17 @@ void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f)
         mvwaddch(win, i, j, '0');
       }
     }
-fprintf(f, "\n");
+    fprintf(f, "\n");
   }
-
-fprintf(f, "\n");
-
+  fprintf(f, "\n");
 }
 
+/*
+*  int **get2DArray(int rows, int cols)
+*    int rows     number of rows for the 2D array
+*    int cols     number of columns for the 2D array
+*  returns        a 2D array with memory allocated
+*/
 int **get2DArray(int rows, int cols) 
 {
   int **arr;
@@ -150,6 +169,15 @@ int **get2DArray(int rows, int cols)
   return arr;
 }
 
+/*
+*  int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x)
+*    int ch       the character pressed by the user
+*    int *y       a pointer to the y position of the figure
+*    int *x       a pointer to the x position of the figure
+*    int max_y    an int that contains the max int for the y position
+*    int max_x    an int that contains the max int for the x position
+*  returns        an int which represents SUCCESS(1) or ERROR(0) 
+*/
 int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x) 
 {
     switch(ch)
