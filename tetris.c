@@ -49,7 +49,7 @@ int main()
   max_y = 0;
 
   x = 1;
-  y = 0;
+  y = 6;
 
   initscr();
   cbreak();
@@ -105,11 +105,12 @@ int main()
 
 void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
 {
-  for(int i = y; i < FIG_SIZE; i++)
+  for(int i = y - 1; i < FIG_SIZE + y; i++)
   {
-    for(int j = x - 1; j < FIG_SIZE; j++)
+    for(int j = x - 1; j < FIG_SIZE + x; j++)
     {
       board[i][j] = figure[i][j];
+      
     }
   }
 }
