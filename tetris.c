@@ -1,6 +1,9 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #define DELAY 100000
 #define FIG_SIZE 3
 #define HEIGHT 20
@@ -10,7 +13,12 @@ int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x);
 int **get2DArray(int cols, int rows);
 int updateBoard();
 void drawFigure(int **figure, int **board, int x, int y);
-void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f);
+void drawBoard(WINDOW *win, int **board, FILE *f);
+void saveFigure(int **figure, int **board, int x, int y);
+void saveBoardToFile(FILE* f, int **board);
+void renderBoardToScreen(int **board); 
+void renderFigureToScreen(int **figure);
+int detectCollision(int **figure, int **board, int x, int y);
 
 int main()
 {
@@ -18,6 +26,7 @@ int main()
   int ch, x, y, startx, starty, max_x, max_y;
   char icon = '0';
   FILE *f = fopen("file.txt", "w");
+
   int **board;
   int **buffBoard;
   int **figure;
@@ -35,14 +44,16 @@ int main()
 	  }
   }
   board = get2DArray(HEIGHT, WIDTH);
+  buffBoard = get2DArray(HEIGHT, WIDTH);
   for(int i = 0; i < HEIGHT; i++)
   {
     for(int j = 0; j < WIDTH; j++)
     {
+      buffBoard[i][j] = 0;
       board[i][j] = 0;
     }
   }
-  buffBoard = board;
+
   startx = 0;
   starty = 0;
   
@@ -60,7 +71,7 @@ int main()
   nodelay(stdscr, TRUE);
   
   tet_win = newwin(HEIGHT, WIDTH, (LINES - HEIGHT) / 2, (COLS - WIDTH) / 2);
-
+  curs_set(0);
   wrefresh(tet_win);
   refresh();
   getmaxyx(tet_win, max_y, max_x);
@@ -71,29 +82,33 @@ int main()
     
     if((ch = getch()) == ERR) 
     {
+      if(detectCollision(figure, buffBoard, x ,y) == 1)
+      {
+        renderFigureToScreen(figure);
+        saveFigure(figure, buffBoard, x, y);
+        y = 1;
+      }
       // Draw a figure, move it downwards
       // until it hits some other figure
-      drawFigure(figure, buffBoard, x, y);
-      drawBoard(tet_win, board, buffBoard, f);
+      drawFigure(figure, board, x, y);
+      drawBoard(tet_win, board, f);
       wrefresh(tet_win);
-      sleep(1);
+      usleep(DELAY);
       //if(counter == 10)
       //{
-        ++y;
+      
         //counter = 0;
       //}
-      if(y >= max_y) 
-      {
-        // If figure reaches bottom or touches another figure
-        // Save figure position to board[][]
-	y = 1;
-      }
+      y++;
       counter++;
     }
     else 
     {
       // The figure drawn rotates
       checkKeyPressed(ch, &y, &x, max_y, max_x);
+      if(x + 2 > max_x) x = WIDTH - 2;
+      if(x <= 0) x = 1;
+      if(y >= max_y) y = HEIGHT - 1;
     }
   }
   fclose(f);
@@ -104,6 +119,89 @@ int main()
   return 0;
 }
 
+int detectCollision(int **figure, int **board, int x, int y)
+{
+  if(y >= HEIGHT)
+  {
+    return 1;
+  }
+  for(int i = 0; i < HEIGHT; i++)
+  {
+    for(int j = 0; j < WIDTH; j++)
+    {
+    }
+  }
+}
+
+void saveBoardToFile(FILE* f, int **board)
+{
+  for(int i = 0; i < HEIGHT; i++)
+  {
+    for(int j = 0; j < WIDTH; j++) 
+    {
+      fprintf(f, "%d", board[i][j]);
+    }
+    fprintf(f, "\n");
+  }
+  fprintf(f, "\n");
+}
+void renderFigureToScreen(int **figure)
+{
+  for(int i = 0; i < FIG_SIZE; i++)
+  {
+    for(int j = 0; j < FIG_SIZE; j++)
+    {
+      printw("%d", figure[i][j]);
+    }
+    printw("\n");
+  }
+  printw("\n");
+
+}
+void renderBoardToScreen(int **board) 
+{
+  for(int i = 0; i < HEIGHT; i++)
+  {
+    for(int j = 0; j < WIDTH; j++)
+    {
+      printw("%d", board[i][j]);
+    }
+    printw("\n");
+  }
+  printw("\n");
+}
+void saveFigure(int **figure, int **board, int x, int y)
+{
+  // for( int i = 20 - 1; i < (3 + 20) - 1; i++)
+  // for( int i = 19; i < 22; i++)
+  int maxY = (FIG_SIZE + y) - 1;
+  int maxX = (FIG_SIZE + x) - 1;
+  if(maxY >= HEIGHT) maxY = HEIGHT;
+  // MAX
+  //y = 20, x = 5
+  // maxY = 20
+  // maxX = 7
+  // board[19][4] = figure[0][0]
+  // board[19][5] = figure[0][1]
+  // board[19][6] = figure[0][2]
+  // NORMAL
+  //y = 19, x = 5
+  // maxY = 21
+  // maxX = 7
+  // board[18][4] = figure[0][0]
+  // board[18][5] = figure[0][1]
+  // board[18][6] = figure[0][2]
+  // board[19][4] = figure[1][0]
+  // board[19][5] = figure[1][1]
+  // board[19][6] = figure[1][2]
+  for(int i = y - 1; i < maxY; i++)
+  {
+    for(int j = x - 1; j < maxX; j++)
+    {
+      board[i][j] = figure[(i - y) + 1][(j - x) + 1];
+    }
+  }
+}  
 /*
 *  drawFigure(int **figure, int **board, int x, int y)
 *    int **figure     a 2D array which contains a certain figure
@@ -114,14 +212,20 @@ int main()
 */
 void drawFigure(int **figure, int **board, int x, int y)
 {
-  for(int i = y - 1; i < (FIG_SIZE + y) - 1; i++)
+  int maxY = (FIG_SIZE + y) - 1;
+  int maxX = (FIG_SIZE + x) - 1;
+  if(maxY >= HEIGHT) maxY = HEIGHT;
+
+  for(int i = y - 1; i < maxY; i++)
   {
-    for(int j = x - 1; j < (FIG_SIZE + x) - 1; j++)
+    for(int j = x - 1; j < maxX; j++)
     {
       board[i][j] = figure[(i - y) + 1][(j - x) + 1];
     }
   }
 }
+
+
 
 /*
 *  drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f)
@@ -131,25 +235,22 @@ void drawFigure(int **figure, int **board, int x, int y)
 *    FILE *f          a FILE which will write the board to file.txt
 *  returns            void
 */
-void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f) 
+void drawBoard(WINDOW *win, int **board, FILE *f) 
 {
   for(int i = 0; i < HEIGHT; i++)
   {
     for(int j = 0; j < WIDTH; j++)
     {
-      fprintf(f, "%d", buffBoard[i][j]);
       if(board[i][j] == 0)
       {
         mvwaddch(win, i, j, '.');
       }
       else 
       {
-        mvwaddch(win, i, j, '0');
+        mvwaddch(win, i, j, '#');
       }
     }
-    fprintf(f, "\n");
   }
-  fprintf(f, "\n");
 }
 
 /*
