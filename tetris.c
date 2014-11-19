@@ -109,8 +109,7 @@ void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
   {
     for(int j = x - 1; j < FIG_SIZE + x; j++)
     {
-      board[i][j] = figure[i][j];
-      
+      board[i][j] = figure[i - y][j - x];
     }
   }
 }
