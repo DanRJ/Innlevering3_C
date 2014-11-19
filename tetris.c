@@ -6,17 +6,18 @@
 #define HEIGHT 20
 #define WIDTH 10
 
-int checkKeyPressed(int ch, char *icon);
+int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x);
 int **get2DArray(int cols, int rows);
 int updateBoard();
 void drawFigure(WINDOW* win, int **figure, int **board, int x, int y);
-void drawBoard(WINDOW *win, int **board);
+void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f);
+
 int main()
 {
   WINDOW *tet_win;
   int ch, x, y, startx, starty, max_x, max_y;
   char icon = '0';
-  
+  FILE *f = fopen("file.txt", "w");
   int **board;
   int **buffBoard;
   int **figure;
@@ -49,7 +50,7 @@ int main()
   max_y = 0;
 
   x = 1;
-  y = 6;
+  y = 1;
 
   initscr();
   cbreak();
@@ -72,30 +73,30 @@ int main()
     {
       // Draw a figure, move it downwards
       // until it hits some other figure
-
-      drawFigure(tet_win, figure, board, x, y);
-      drawBoard(tet_win, board);
+      drawFigure(tet_win, figure, buffBoard, x, y);
+      drawBoard(tet_win, board, buffBoard, f);
       wrefresh(tet_win);
-      usleep(DELAY);
-      if(counter == 10)
-      {
+      sleep(1);
+      //if(counter == 10)
+      //{
         ++y;
-        counter = 0;
-      }
-      if(y > max_y) 
+        //counter = 0;
+      //}
+      if(y >= max_y) 
       {
         // If figure reaches bottom or touches another figure
         // Save figure position to board[][]
+	y = 1;
       }
       counter++;
     }
     else 
     {
       // The figure drawn rotates
-      checkKeyPressed(ch, &icon);
+      checkKeyPressed(ch, &y, &x, max_y, max_x);
     }
   }
-  
+  fclose(f);
   delwin(tet_win);
 
   endwin();
@@ -105,21 +106,23 @@ int main()
 
 void drawFigure(WINDOW* win, int **figure, int **board, int x, int y)
 {
-  for(int i = y - 1; i < FIG_SIZE + y; i++)
+  for(int i = y - 1; i < (FIG_SIZE + y) - 1; i++)
   {
-    for(int j = x - 1; j < FIG_SIZE + x; j++)
+    for(int j = x - 1; j < (FIG_SIZE + x) - 1; j++)
     {
-      board[i][j] = figure[i - y][j - x];
+      board[i][j] = figure[(i - y) + 1][(j - x) + 1];
     }
   }
 }
 
-void drawBoard(WINDOW *win, int **board) 
+void drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f) 
 {
+  
   for(int i = 0; i < HEIGHT; i++)
   {
     for(int j = 0; j < WIDTH; j++)
     {
+      fprintf(f, "%d", buffBoard[i][j]);
       if(board[i][j] == 0)
       {
         mvwaddch(win, i, j, '.');
@@ -129,7 +132,11 @@ void drawBoard(WINDOW *win, int **board)
         mvwaddch(win, i, j, '0');
       }
     }
+fprintf(f, "\n");
   }
+
+fprintf(f, "\n");
+
 }
 
 int **get2DArray(int rows, int cols) 
@@ -143,21 +150,21 @@ int **get2DArray(int rows, int cols)
   return arr;
 }
 
-int checkKeyPressed(int ch, char *icon) 
+int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x) 
 {
     switch(ch)
     {
       case KEY_LEFT:
-        *icon = '1';
+        *x -= 1;
         break;
       case KEY_RIGHT:
-        *icon = '2';
+        *x += 1;
         break;
       case KEY_UP:
-        *icon = '3';
+        //rotate figure
         break;
       case KEY_DOWN:
-        *icon = '4';
+        *y += 1;
         break;
     }
     return 1;
