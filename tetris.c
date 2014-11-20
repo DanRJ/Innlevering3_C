@@ -13,19 +13,21 @@ int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x);
 int **get2DArray(int cols, int rows);
 int updateBoard();
 void drawFigure(int **figure, int **board, int x, int y);
-void drawBoard(WINDOW *win, int **board, FILE *f);
+void drawBoard(WINDOW *win, int **board);
 void saveFigure(int **figure, int **board, int x, int y);
 void saveBoardToFile(FILE* f, int **board);
 void renderBoardToScreen(int **board); 
 void renderFigureToScreen(int **figure);
-int detectCollision(int **figure, int **board, int x, int y);
+int detectCollision(int **figure, int **board, int *figurePos, int x, int y, int maxFigurePos);
+void deleteLastFig(int **figure, int **board, int lastX, int lastY);
 
 int main()
 {
   WINDOW *tet_win;
-  int ch, x, y, startx, starty, max_x, max_y;
+  int ch, x, y, startx, starty, max_x, max_y, lastY, lastX;
   FILE *f = fopen("file.txt", "w");
-
+  int figurePos[3];
+  int maxFigurePos = 0;
   int **board;
   int **buffBoard;
   int **figure;
@@ -35,10 +37,16 @@ int main()
   {
     for(int j = 0; j < FIG_SIZE; j++) 
 	  {
-      figure[i][j] = 0;
-      if(i == 1)
+      if(i == 0) {
+      figure[i][j] = 1;
+     }
+      if(figure[i][j] == 1)
       {
-        figure[i][j] = 1;
+        figurePos[i] = j;
+        if(maxFigurePos < j)
+        {
+          maxFigurePos = j;
+        }
       }
 	  }
   }
@@ -58,9 +66,8 @@ int main()
   
   max_x = 0;
   max_y = 0;
-
-  x = WIDTH / 2;
-  y = 1;
+  x = 0;
+  y = 0;
 
   initscr();
   cbreak();
@@ -68,7 +75,6 @@ int main()
   // Choose to not have a keypad for tetris window
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
-  
   tet_win = newwin(HEIGHT, WIDTH, (LINES - HEIGHT) / 2, (COLS - WIDTH) / 2);
   curs_set(0);
   wrefresh(tet_win);
@@ -81,34 +87,36 @@ int main()
     
     if((ch = getch()) == ERR) 
     {
-      if(detectCollision(figure, buffBoard, x ,y) == 1)
+      if(detectCollision(figure, buffBoard, figurePos, x , y, maxFigurePos) == 1)
       {
-        saveFigure(figure, buffBoard, x, y);
-        renderBoardToScreen(buffBoard);
+        printw("x: %d y: %d maxfig: %d", x, y, maxFigurePos);
+        saveFigure(figure, buffBoard, x, y + maxFigurePos);
+        //renderBoardToScreen(buffBoard);
         saveBoardToFile(f, buffBoard);
-        y = 1;
+        y = 0;
       }
       // Draw a figure, move it downwards
       // until it hits some other figure
+      deleteLastFig(figure, board, lastX, lastY);
+      lastX = x;
+      lastY = y;
       drawFigure(figure, board, x, y);
-      drawBoard(tet_win, board, f);
+      drawBoard(tet_win, board);
       wrefresh(tet_win);
+      
       usleep(DELAY);
       //if(counter == 10)
       //{
       
-        //counter = 0;
+        counter = 0;
+        y++;
       //}
-      y++;
       counter++;
     }
     else 
     {
       // The figure drawn rotates
       checkKeyPressed(ch, &y, &x, max_y, max_x);
-      if(x + 2 > max_x) x = WIDTH - 2;
-      if(x <= 0) x = 1;
-      if(y > max_y) y = max_y;
     }
   }
   fclose(f);
@@ -119,10 +127,9 @@ int main()
   return 0;
 }
 
-int detectCollision(int **figure, int **board, int x, int y)
+int detectCollision(int **figure, int **board, int *figurePos, int x, int y, int maxFigurePos)
 {
-  printw("Y: %d X: %d\n", y, x);
-  if(y >= HEIGHT)
+  if(y > 19 - maxFigurePos)
   {
     return 1;
   }
@@ -130,6 +137,22 @@ int detectCollision(int **figure, int **board, int x, int y)
   {
     for(int j = 0; j < WIDTH; j++)
     {
+    }
+  }
+}
+void deleteLastFig(int **figure, int **board, int lastX, int lastY) 
+{
+  if(lastY > -1) {
+    int maxY = (FIG_SIZE + lastY);
+    int maxX = (FIG_SIZE + lastX);
+    if(maxY >= HEIGHT) maxY = HEIGHT;
+  
+    for(int i = lastY; i < maxY; i++)
+    {
+      for(int j = lastX; j < maxX; j++)
+      { 
+        board[i][j] = 0;
+      }
     }
   }
 }
@@ -146,6 +169,7 @@ void saveBoardToFile(FILE* f, int **board)
   }
   fprintf(f, "\n");
 }
+
 void renderFigureToScreen(int **figure)
 {
   for(int i = 1; i <= FIG_SIZE; i++)
@@ -159,6 +183,7 @@ void renderFigureToScreen(int **figure)
   printw("\n");
 
 }
+
 void renderBoardToScreen(int **board) 
 {
   for(int i = 0; i < HEIGHT; i++)
@@ -171,38 +196,22 @@ void renderBoardToScreen(int **board)
   }
   printw("\n");
 }
+
 void saveFigure(int **figure, int **board, int x, int y)
 {
-  // for( int i = 20 - 1; i < (3 + 20) - 1; i++)
-  // for( int i = 19; i < 22; i++)
-  int maxY = (FIG_SIZE + y) - 1;
-  int maxX = (FIG_SIZE + x) - 1;
+  int maxY = (FIG_SIZE + y);
+  int maxX = (FIG_SIZE + x);
   if(maxY >= HEIGHT) maxY = HEIGHT;
-  // MAX
-  //y = 20, x = 5
-  // maxY = 20
-  // maxX = 7
-  // board[19][4] = figure[0][0]
-  // board[19][5] = figure[0][1]
-  // board[19][6] = figure[0][2]
-  // NORMAL
-  //y = 19, x = 5
-  // maxY = 21
-  // maxX = 7
-  // board[18][4] = figure[0][0]
-  // board[18][5] = figure[0][1]
-  // board[18][6] = figure[0][2]
-  // board[19][4] = figure[1][0]
-  // board[19][5] = figure[1][1]
-  // board[19][6] = figure[1][2]
-  for(int i = y - 1; i < maxY; i++)
+  
+  for(int i = y; i < maxY; i++)
   {
-    for(int j = x - 1; j < maxX; j++)
+    for(int j = x; j < maxX; j++)
     {
-      board[i][j] = figure[(i - y) + 1][(j - x) + 1];
+      board[i][j] = figure[(i - y)][(j - x)];
     }
   }
 }  
+
 /*
 *  drawFigure(int **figure, int **board, int x, int y)
 *    int **figure     a 2D array which contains a certain figure
@@ -213,15 +222,16 @@ void saveFigure(int **figure, int **board, int x, int y)
 */
 void drawFigure(int **figure, int **board, int x, int y)
 {
-  int maxY = (FIG_SIZE + y) - 1;
-  int maxX = (FIG_SIZE + x) - 1;
+  int maxY = (FIG_SIZE + y);
+  int maxX = (FIG_SIZE + x);
   if(maxY >= HEIGHT) maxY = HEIGHT;
+  if(maxX >= WIDTH) maxX = WIDTH;
 
-  for(int i = y - 1; i < maxY; i++)
+  for(int i = y; i < maxY; i++)
   {
-    for(int j = x - 1; j < maxX; j++)
+    for(int j = x; j < maxX; j++)
     {
-      board[i][j] = figure[(i - y) + 1][(j - x) + 1];
+      board[i][j] = figure[(i - y)][(j - x)];
     }
   }
 }
@@ -236,7 +246,7 @@ void drawFigure(int **figure, int **board, int x, int y)
 *    FILE *f          a FILE which will write the board to file.txt
 *  returns            void
 */
-void drawBoard(WINDOW *win, int **board, FILE *f) 
+void drawBoard(WINDOW *win, int **board) 
 {
   for(int i = 0; i < HEIGHT; i++)
   {
@@ -285,10 +295,13 @@ int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x)
     switch(ch)
     {
       case KEY_LEFT:
-        *x -= 1;
+        if(!(*x < 0 + FIG_SIZE))
+          *x -= 1;
         break;
       case KEY_RIGHT:
-        *x += 1;
+        printw("MAX%d", max_x);
+        if(!(*x > (max_x - FIG_SIZE) - 1))
+          *x += 1;
         break;
       case KEY_UP:
         //rotate figure
