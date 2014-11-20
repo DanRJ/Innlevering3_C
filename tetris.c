@@ -12,13 +12,13 @@
 int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x);
 int **get2DArray(int cols, int rows);
 int updateBoard();
-void drawFigure(int **figure, int **board, int x, int y);
+void drawFigure(int **figure, int **board, int x, int y, int maxFigurePos);
 void drawBoard(WINDOW *win, int **board);
-void saveFigure(int **figure, int **board, int x, int y);
+void saveFigure(int **figure, int **board, int x, int y, int maxFigurePos);
 void saveBoardToFile(FILE* f, int **board);
 void renderBoardToScreen(int **board); 
 void renderFigureToScreen(int **figure);
-int detectCollision(int **figure, int **board, int *figurePos, int x, int y, int maxFigurePos);
+int detectCollision(int **figure, int **board,int *figurePos, int x, int y, int maxFigurePos);
 void deleteLastFig(int **figure, int **board, int lastX, int lastY);
 
 int main()
@@ -37,15 +37,16 @@ int main()
   {
     for(int j = 0; j < FIG_SIZE; j++) 
 	  {
-      if(i == 0) {
+     //if(i == 0) {
       figure[i][j] = 1;
-     }
+     //}
+     //figure[1][1] = 1;
       if(figure[i][j] == 1)
       {
-        figurePos[i] = j;
-        if(maxFigurePos < j)
+        figurePos[j] = i;
+        if(maxFigurePos < i)
         {
-          maxFigurePos = j;
+          maxFigurePos = i;
         }
       }
 	  }
@@ -80,17 +81,19 @@ int main()
   wrefresh(tet_win);
   refresh();
   getmaxyx(tet_win, max_y, max_x);
-  int counter = 0;
   
+  int counter = 0;
   while(1) 
   {
-    
     if((ch = getch()) == ERR) 
     {
+      //printw("x: %d y: %d max: %d\n", x, y, maxFigurePos);
       if(detectCollision(figure, buffBoard, figurePos, x , y, maxFigurePos) == 1)
       {
-        printw("x: %d y: %d maxfig: %d", x, y, maxFigurePos);
-        saveFigure(figure, buffBoard, x, y + maxFigurePos);
+        //printw("y: %d\n", y);
+        //printw("maxY: %d H: %d\n", y + maxFigurePos, HEIGHT);
+        saveFigure(figure, buffBoard, x, y, maxFigurePos);
+        //renderFigureToScreen(figure);
         //renderBoardToScreen(buffBoard);
         saveBoardToFile(f, buffBoard);
         y = 0;
@@ -100,23 +103,21 @@ int main()
       deleteLastFig(figure, board, lastX, lastY);
       lastX = x;
       lastY = y;
-      drawFigure(figure, board, x, y);
+      drawFigure(figure, board, x, y, maxFigurePos);
       drawBoard(tet_win, board);
       wrefresh(tet_win);
-      
+  
       usleep(DELAY);
       //if(counter == 10)
       //{
-      
-        counter = 0;
-        y++;
+      y++;
       //}
-      counter++;
     }
     else 
     {
       // The figure drawn rotates
       checkKeyPressed(ch, &y, &x, max_y, max_x);
+      //wclear(stdscr);
     }
   }
   fclose(f);
@@ -129,16 +130,29 @@ int main()
 
 int detectCollision(int **figure, int **board, int *figurePos, int x, int y, int maxFigurePos)
 {
-  if(y > 19 - maxFigurePos)
+  if(y >= HEIGHT - (maxFigurePos))
   {
     return 1;
   }
+  // y = 19
+  // x = 5
+  //
+
+  for(int t = 0; t < FIG_SIZE; t++) {
+    if(board[y][x + (figurePos[t])] == 1) {
+      printw("hello");
+    }
+//    printw("t: %d p: %d\n", t, figurePos[t]);
+ // printw("y: %d x: %d\n", y, x); 
+  }
+  printw("y: %d x: %d\n", y, x);
+  /*
   for(int i = 0; i < HEIGHT; i++)
   {
     for(int j = 0; j < WIDTH; j++)
     {
     }
-  }
+  }*/
 }
 void deleteLastFig(int **figure, int **board, int lastX, int lastY) 
 {
@@ -172,9 +186,9 @@ void saveBoardToFile(FILE* f, int **board)
 
 void renderFigureToScreen(int **figure)
 {
-  for(int i = 1; i <= FIG_SIZE; i++)
+  for(int i = 0; i < FIG_SIZE; i++)
   {
-    for(int j = 1; j <= FIG_SIZE; j++)
+    for(int j = 0; j < FIG_SIZE; j++)
     {
       printw("%d", figure[i][j]);
     }
@@ -197,12 +211,14 @@ void renderBoardToScreen(int **board)
   printw("\n");
 }
 
-void saveFigure(int **figure, int **board, int x, int y)
+void saveFigure(int **figure, int **board, int x, int y, int maxFigurePos)
 {
   int maxY = (FIG_SIZE + y);
-  int maxX = (FIG_SIZE + x);
-  if(maxY >= HEIGHT) maxY = HEIGHT;
-  
+  int maxX = FIG_SIZE + x;
+  if(maxY > HEIGHT) maxY = HEIGHT;
+  if(maxX > WIDTH) maxX = WIDTH;
+  y = y - 1;
+  //printw("x: %d y: %d pos: %d maxY: %d maxX: %d\n", x, y, maxFigurePos, maxY, maxX);
   for(int i = y; i < maxY; i++)
   {
     for(int j = x; j < maxX; j++)
@@ -220,13 +236,14 @@ void saveFigure(int **figure, int **board, int x, int y)
 *    int y            an int which contains the y position for figure[1][1] on the board
 *  returns            void
 */
-void drawFigure(int **figure, int **board, int x, int y)
+void drawFigure(int **figure, int **board, int x, int y, int maxFigurePos)
 {
   int maxY = (FIG_SIZE + y);
-  int maxX = (FIG_SIZE + x);
-  if(maxY >= HEIGHT) maxY = HEIGHT;
-  if(maxX >= WIDTH) maxX = WIDTH;
-
+  int maxX = FIG_SIZE + x;
+  if(maxY > HEIGHT) maxY = HEIGHT;
+  if(maxX > WIDTH) maxX = WIDTH;
+  
+//  printw("x: %d y: %d pos: %d maxY: %d maxX: %d\n", x, y, maxFigurePos, maxY, maxX);
   for(int i = y; i < maxY; i++)
   {
     for(int j = x; j < maxX; j++)
@@ -295,11 +312,10 @@ int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x)
     switch(ch)
     {
       case KEY_LEFT:
-        if(!(*x < 0 + FIG_SIZE))
+        if(!(*x < 1))
           *x -= 1;
         break;
       case KEY_RIGHT:
-        printw("MAX%d", max_x);
         if(!(*x > (max_x - FIG_SIZE) - 1))
           *x += 1;
         break;
