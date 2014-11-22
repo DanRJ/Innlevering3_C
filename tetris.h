@@ -1,5 +1,5 @@
-#ifndef TETRIS_C
-#define TETRIS_C
+#ifndef TETRIS_H
+#define TETRIS_H
 
 #include <ncurses.h>
 #include <unistd.h>
