@@ -1,4 +1,132 @@
-#include "tetris.h"
+#include <ncurses.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#define DELAY 100000
+#define FIG_SIZE 3
+#define HEIGHT 20
+#define WIDTH 10
+
+int checkRows(int **buffBoard, int **board);
+int stop(FILE *f, WINDOW *win, int **board, int **buffBoard, int **temp, int **figure);
+int checkKeyPressed(int ch,int **temp, int **figure, int *y, int *x, int max_y, int max_x, int *maxFigureY, int *maxFigureX);
+int **get2DArray(int cols, int rows);
+int updateBoard();
+void drawFigure(int **figure, int **board, int x, int y, int maxFigureY, int maxFigureX);
+void drawBoard(WINDOW *win, int **board);
+void saveFigure(int **figure, int **board, int x, int y, int maxFigureY, int maxFigureX);
+void saveBoardToFile(FILE* f, int **board);
+void renderBoardToScreen(int **board); 
+void renderFigureToScreen(int **figure);
+int detectCollision(int **figure, int **board, int x, int y, int maxFigureY, int maxFigureX);
+void deleteLastFig(int **board, int lastX, int lastY);
+void createRandomFigure(int **figure, int *maxFigureY, int *maxFigureX);
+
+int main()
+{
+  WINDOW *tet_win;
+  int ch, x, y, max_x, max_y, lastY, lastX;
+  FILE *f = fopen("file.txt", "w");
+  int maxFigureY = 0;
+  int maxFigureX = 0;
+  int **board;
+  int **buffBoard;
+  int **figure;
+  int **temp;
+  
+  board = NULL;
+  buffBoard = NULL;
+  figure = NULL;
+  temp = NULL;
+
+  temp = get2DArray(FIG_SIZE, FIG_SIZE);
+  figure = get2DArray(FIG_SIZE, FIG_SIZE);
+  board = get2DArray(HEIGHT, WIDTH);
+  buffBoard = get2DArray(HEIGHT, WIDTH);
+  
+  for(int i = 0; i < HEIGHT; i++)
+  {
+    for(int j = 0; j < WIDTH; j++)
+    {
+      buffBoard[i][j] = 0;
+      board[i][j] = 0;
+    }
+  }
+  
+  max_x = 0;
+  max_y = 0;
+  
+  x = (WIDTH / 2) - 1;
+  y = 0;
+
+  initscr();
+  cbreak();
+  noecho();
+  // Choose to not have a keypad for tetris window
+  keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE);
+  tet_win = newwin(HEIGHT, WIDTH, (LINES - HEIGHT) / 2, (COLS - WIDTH) / 2);
+  
+  curs_set(0);
+  wrefresh(tet_win);
+  refresh();
+  getmaxyx(tet_win, max_y, max_x);
+  max_y = max_y - 1;
+  max_x = max_x - 1;
+  createRandomFigure(figure, &maxFigureY, &maxFigureX);
+
+  while(1) 
+  {
+    if((ch = getch()) == ERR) 
+    {
+      if(detectCollision(figure, buffBoard, x , y, maxFigureY, maxFigureX) == 1)
+      {
+        saveFigure(figure, buffBoard, x, y, maxFigureY, maxFigureX);
+        int ret = checkRows(buffBoard, board);
+        if(ret == -1)
+        {
+          stop(f, tet_win, board, buffBoard, temp, figure);
+          return 0;
+        }
+        //renderFigureToScreen(figure);
+        //renderBoardToScreen(buffBoard);
+        saveBoardToFile(f, buffBoard);
+        createRandomFigure(figure, &maxFigureY, &maxFigureX);
+        y = 0;
+        x = (WIDTH / 2) - 1;
+      }
+      deleteLastFig(board, lastX, lastY);
+      lastX = x;
+      lastY = y;
+      drawFigure(figure, board, x, y, maxFigureY, maxFigureX);
+      for(int k = 0; k < HEIGHT; k++)
+      {
+        for(int l = 0; l < WIDTH; l++)
+        {
+          if(buffBoard[k][l] == 1)
+          {
+            board[k][l] = 1;
+          }
+        }
+      }
+      drawBoard(tet_win, board);
+
+      wrefresh(tet_win); 
+      usleep(DELAY);
+      y++;
+    }
+    else 
+    {
+      // The figure drawn rotates
+      checkKeyPressed(ch,temp, figure, &y, &x, max_y, max_x, &maxFigureY, &maxFigureX);
+    }
+  }
+  stop(f, tet_win, board, buffBoard, temp, figure);
+  return 0;
+}
 int checkRows(int **buffBoard, int **board)
 {
   int row = -1;
@@ -18,7 +146,7 @@ int checkRows(int **buffBoard, int **board)
     if(countRow == 10)
     {
       row = i;
-      
+      //printw("Row: %d Counter: %d\n", row, countRow);
       for(int k = 0; k < WIDTH; k++)
       {
         buffBoard[row][k] = 0;
@@ -36,7 +164,6 @@ int checkRows(int **buffBoard, int **board)
   }
   return 1;
 }
-
 int stop(FILE *f, WINDOW *win, int **board, int **buffBoard, int **temp, int **figure)
 {
   free(board);
@@ -47,7 +174,6 @@ int stop(FILE *f, WINDOW *win, int **board, int **buffBoard, int **temp, int **f
   delwin(win);
   endwin();
 }
-
 int detectCollision(int **figure, int **board, int x, int y, int maxFigureY, int maxFigureX)
 {
   if((y + maxFigureY) + 1 == HEIGHT)
@@ -142,8 +268,8 @@ void createRandomFigure(int **figure, int *maxFigureY, int *maxFigureX)
       }
     }
   }
-}
 
+}
 void deleteLastFig(int **board, int lastX, int lastY) 
 {
   if(lastY > -1) {
@@ -206,13 +332,21 @@ void saveFigure(int **figure, int **board, int x, int y, int maxFigureY, int max
   drawFigure(figure, board, x, y, maxFigureY, maxFigureX);
 }  
 
+/*
+*  drawFigure(int **figure, int **board, int x, int y)
+*    int **figure     a 2D array which contains a certain figure
+*    int **board      a 2D array which will draw the figure to screen
+*    int x            an int which contains the y position for figure[1][1] on the board
+*    int y            an int which contains the y position for figure[1][1] on the board
+*  returns            void
+*/
 void drawFigure(int **figure, int **board, int x, int y, int maxFigureY, int maxFigureX)
 {
   int maxY = (maxFigureY + y) + 1;
   int maxX = (maxFigureX + x) + 1;
   if(maxY > HEIGHT) maxY = HEIGHT;
   if(maxX > WIDTH) maxX = WIDTH;
-  
+ // printw("x: %d y: %d maxY: %d maxX: %d\n", x, y, maxY, maxX);
   for(int i = y; i < maxY; i++)
   {
     for(int j = x; j < maxX; j++)
@@ -225,6 +359,16 @@ void drawFigure(int **figure, int **board, int x, int y, int maxFigureY, int max
   }
 }
 
+
+
+/*
+*  drawBoard(WINDOW *win, int **board, int **buffBoard, FILE *f)
+*    WINDOW *win      a pointer to WINDOW, which it will write to
+*    int **board      a 2D array which contains the static blocks in the board
+*    int **buffBoard  a 2D array which contains the figure
+*    FILE *f          a FILE which will write the board to file.txt
+*  returns            void
+*/
 void drawBoard(WINDOW *win, int **board) 
 {
   for(int i = 0; i < HEIGHT; i++)
@@ -243,6 +387,12 @@ void drawBoard(WINDOW *win, int **board)
   }
 }
 
+/*
+*  int **get2DArray(int rows, int cols)
+*    int rows     number of rows for the 2D array
+*    int cols     number of columns for the 2D array
+*  returns        a 2D array with memory allocated
+*/
 int **get2DArray(int rows, int cols) 
 {
   int **arr;
@@ -254,6 +404,15 @@ int **get2DArray(int rows, int cols)
   return arr;
 }
 
+/*
+*  int checkKeyPressed(int ch, int *y, int *x, int max_y, int max_x)
+*    int ch       the character pressed by the user
+*    int *y       a pointer to the y position of the figure
+*    int *x       a pointer to the x position of the figure
+*    int max_y    an int that contains the max int for the y position
+*    int max_x    an int that contains the max int for the x position
+*  returns        an int which represents SUCCESS(1) or ERROR(0) 
+*/
 int counter = 0;
 int checkKeyPressed(int ch, int **temp, int **figure, int *y, int *x, int max_y, int max_x, int *maxFigureY, int *maxFigureX) 
 {
