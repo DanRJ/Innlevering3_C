@@ -10,7 +10,7 @@
 #define HEIGHT 20
 #define WIDTH 10
 
-int checkRows(int **board);
+int checkRows(int **buffBoard, int **board);
 int stop(FILE *f, WINDOW *win, int **board, int **buffBoard, int **temp, int **figure);
 int checkKeyPressed(int ch,int **temp, int **figure, int **board, int *y, int *x, int max_y, int max_x, int *maxFigureY, int *maxFigureX);
 int **get2DArray(int cols, int rows);
@@ -85,7 +85,8 @@ int main()
       if(detectCollision(figure, buffBoard, x , y, maxFigureY, maxFigureX) == 1)
       {
         saveFigure(figure, buffBoard, x, y, maxFigureY, maxFigureX);
-        if(checkRows(buffBoard) == -1)
+        int ret = checkRows(buffBoard, board);
+        if(ret == -1)
         {
           stop(f, tet_win, board, buffBoard, temp, figure);
           return 0;
@@ -126,18 +127,42 @@ int main()
   stop(f, tet_win, board, buffBoard, temp, figure);
   return 0;
 }
-int checkRows(int **board)
+int checkRows(int **buffBoard, int **board)
 {
+  int row = -1;
   for(int i = 0; i < HEIGHT; i++)
   {
+    int countRow = 0;
     for(int j = 0;  j < WIDTH; j++)
     {
+      if(buffBoard[i][j] == 1) {
+        countRow++;
+      }
       if(board[1][j] == 1)
       {
         return -1;
       }
     }
+    if(countRow == 10)
+    {
+      row = i;
+      //printw("Row: %d Counter: %d\n", row, countRow);
+      for(int k = 0; k < WIDTH; k++)
+      {
+        buffBoard[row][k] = 0;
+        board[row][k] = 0;
+      }
+      for(int m = 0; m < HEIGHT - 1; m++)
+      {
+        for(int n = 0; n < WIDTH; n++)
+        {
+          board[m + 1][n] = board[m][n];
+          buffBoard[m + 1][n] = board[m][n];
+        }
+      }
+    }
   }
+  return 1;
 }
 int stop(FILE *f, WINDOW *win, int **board, int **buffBoard, int **temp, int **figure)
 {
@@ -193,7 +218,7 @@ void createRandomFigure(int **figure, int *maxFigureY, int *maxFigureX)
   {
     for(int j = 0; j < FIG_SIZE; j++)
     {
-      switch(ran)
+      switch(1)
       {
         case 1:
           if(i == 1) {
